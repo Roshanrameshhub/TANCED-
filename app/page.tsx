@@ -25,7 +25,7 @@ import {
   getActiveFestival,
 } from '@/lib/tangedco-data'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Info } from 'lucide-react'
+import { Info, LayoutDashboard, Cable, BarChart3, Route } from 'lucide-react'
 
 export default function Dashboard() {
   const [selectedDistrict, setSelectedDistrict] = useState('chennai')
@@ -84,6 +84,13 @@ export default function Dashboard() {
     setShowShutdownPlan(false)
   }, [])
 
+  const tabItems = [
+    { value: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { value: 'feeders', label: 'Feeders', icon: Cable },
+    { value: 'analysis', label: 'Analysis', icon: BarChart3 },
+    { value: 'planning', label: 'Planning', icon: Route },
+  ] as const
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
@@ -132,11 +139,22 @@ export default function Dashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="feeders">Feeders</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="planning">Planning</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl border border-border/60 bg-white p-2 lg:grid-cols-4">
+            {tabItems.map(tab => {
+              const TabIcon = tab.icon
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="h-auto rounded-lg border border-transparent px-3 py-2 text-left data-[state=active]:border-primary/30 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <TabIcon className="h-4 w-4" />
+                    {tab.label}
+                  </span>
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
 
           {/* Overview Tab */}

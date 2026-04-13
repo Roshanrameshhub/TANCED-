@@ -14,7 +14,7 @@ export function DashboardHeader() {
   }, [])
 
   return (
-    <header className="border-b border-border bg-card px-6 py-4">
+    <header className="border-b border-border bg-white px-6 py-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -61,6 +61,20 @@ export function DashboardHeader() {
             </span>
           </div>
         </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
+          Overview
+        </span>
+        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
+          Feeders
+        </span>
+        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
+          Analysis
+        </span>
+        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
+          Planning
+        </span>
       </div>
     </header>
   )
