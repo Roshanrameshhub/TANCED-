@@ -23,6 +23,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { BarChart3 } from 'lucide-react'
+import { chartTheme } from '@/lib/chart-theme'
 
 interface DemandData {
   hour: number
@@ -55,10 +56,10 @@ export function PeakAnalysisChart({
   const avgPeak = Math.round(peakHours.reduce((sum, d) => sum + d.demand, 0) / peakHours.length)
   const avgOffPeak = Math.round(offPeakHours.reduce((sum, d) => sum + d.demand, 0) / offPeakHours.length)
 
-  // Colors
-  const normalColor = '#4f7cff'
-  const peakColor = '#f59e0b'
-  const currentColor = '#22c55e'
+  const normalColor = chartTheme.primary
+  const peakColor = chartTheme.tertiary
+  const currentColor = chartTheme.statusNormal
+  const baseLineColor = chartTheme.mutedForeground
 
   return (
     <Card>
@@ -143,13 +144,13 @@ export function PeakAnalysisChart({
               />
               <ReferenceLine
                 y={baseLoad}
-                stroke="#888"
+                stroke={baseLineColor}
                 strokeDasharray="3 3"
                 label={{
                   value: 'Base',
                   position: 'insideTopRight',
                   fontSize: 10,
-                  fill: '#888',
+                  fill: baseLineColor,
                 }}
               />
               <Bar dataKey="demand" radius={[2, 2, 0, 0]}>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import { useClientNow } from '@/hooks/use-client-now'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { DistrictSelector } from '@/components/dashboard/district-selector'
 import { SummaryCards } from '@/components/dashboard/summary-cards'
@@ -30,29 +31,28 @@ import { Info, LayoutDashboard, Cable, BarChart3, Route } from 'lucide-react'
 export default function Dashboard() {
   const [selectedDistrict, setSelectedDistrict] = useState('chennai')
   const [selectedFeeder, setSelectedFeeder] = useState<string | null>(null)
-  const [currentHour, setCurrentHour] = useState(new Date().getHours())
+  const { now: currentDate, hour: currentHour } = useClientNow()
   const [isSimulatingShutdown, setIsSimulatingShutdown] = useState(false)
   const [showShutdownPlan, setShowShutdownPlan] = useState(false)
-
-  // Update current hour every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentHour(new Date().getHours())
-    }, 60000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const currentDate = new Date()
   const district = districts.find(d => d.id === selectedDistrict)
 
   // Generate data
   const hourlyDemand = generateHourlyDemand(selectedDistrict, currentDate)
   const currentDemandData = hourlyDemand.find(d => d.hour === currentHour)
   const peakDemandData = hourlyDemand.reduce((max, d) => (d.demand > max.demand ? d : max), hourlyDemand[0])
-  const feederLoads = generateFeederLoads(selectedDistrict, currentDemandData?.demand || 0)
-  const alerts = generateAlerts(feederLoads, hourlyDemand, currentHour)
+  const feederLoads = generateFeederLoads(
+    selectedDistrict,
+    currentDemandData?.demand || 0,
+    currentDate,
+  )
+  const alerts = generateAlerts(feederLoads, hourlyDemand, currentHour, currentDate)
   const comparisonData = generateComparisonData(selectedDistrict, currentDate)
-  const solarGeneration = getSolarGeneration(currentHour, currentDate.getMonth() + 1, district?.baseLoad || 0)
+  const solarGeneration = getSolarGeneration(
+    currentHour,
+    currentDate.getMonth() + 1,
+    district?.baseLoad || 0,
+    `${selectedDistrict}-${currentDate.toISOString().slice(0, 10)}`,
+  )
   const festival = getActiveFestival(currentDate)
 
   // Calculate grid utilization
@@ -68,7 +68,9 @@ export default function Dashboard() {
 
   // Shutdown plan
   const deficitMW = totalLoad > totalCapacity ? totalLoad - totalCapacity : 0
-  const shutdownPlan = showShutdownPlan ? generateShutdownPlan(feederLoads, deficitMW > 0 ? deficitMW : 100) : []
+  const shutdownPlan = showShutdownPlan
+    ? generateShutdownPlan(feederLoads, deficitMW > 0 ? deficitMW : 100, currentDate)
+    : []
 
   const handleSimulateShutdown = useCallback(() => {
     setIsSimulatingShutdown(true)
@@ -139,19 +141,17 @@ export default function Dashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl border border-border/60 bg-white p-2 lg:grid-cols-4">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-xl border border-border bg-muted p-2 sm:grid-cols-4">
             {tabItems.map(tab => {
               const TabIcon = tab.icon
               return (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="h-auto rounded-lg border border-transparent px-3 py-2 text-left data-[state=active]:border-primary/30 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  className="h-auto w-full min-w-0 flex-none justify-center gap-2 rounded-lg px-3 py-2.5 data-[state=active]:border-border data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 >
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <TabIcon className="h-4 w-4" />
-                    {tab.label}
-                  </span>
+                  <TabIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate text-sm font-medium">{tab.label}</span>
                 </TabsTrigger>
               )
             })}
@@ -181,6 +181,8 @@ export default function Dashboard() {
               <SolarGenerationChart
                 districtBaseLoad={district?.baseLoad || 0}
                 currentHour={currentHour}
+                month={currentDate.getMonth() + 1}
+                seedKey={`${selectedDistrict}-${currentDate.toISOString().slice(0, 10)}`}
               />
             </div>
           </TabsContent>

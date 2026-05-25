@@ -22,6 +22,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { History } from 'lucide-react'
+import { chartTheme } from '@/lib/chart-theme'
 
 interface ComparisonChartProps {
   today: Array<{ hour: number; demand: number }>
@@ -40,9 +41,8 @@ export function ComparisonChart({ today, lastWeek, districtName }: ComparisonCha
   const lastWeekTotal = lastWeek.reduce((sum, d) => sum + d.demand, 0)
   const percentChange = Math.round(((todayTotal - lastWeekTotal) / lastWeekTotal) * 100)
 
-  // Compute colors
-  const todayColor = '#4f7cff'
-  const lastWeekColor = '#94a3b8'
+  const todayColor = chartTheme.primary
+  const lastWeekColor = chartTheme.muted
 
   return (
     <Card>

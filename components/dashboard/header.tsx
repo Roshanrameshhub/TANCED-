@@ -2,19 +2,34 @@
 
 import { Zap, Clock, Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { formatClockTime } from '@/lib/format-time'
+import { STABLE_SSR_DATE } from '@/hooks/use-client-now'
+import { useMounted } from '@/hooks/use-mounted'
 
 export function DashboardHeader() {
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const mounted = useMounted()
+  const [currentTime, setCurrentTime] = useState(STABLE_SSR_DATE)
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
+    const sync = () => setCurrentTime(new Date())
+    sync()
+    const timer = setInterval(sync, 1000)
     return () => clearInterval(timer)
   }, [])
 
+  const dateLabel = mounted
+    ? currentTime.toLocaleDateString('en-IN', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '—'
+
+  const timeLabel = mounted ? formatClockTime(currentTime) : '--:--:--'
+
   return (
-    <header className="border-b border-border bg-white px-6 py-4 shadow-sm">
+    <header className="border-b border-border bg-background px-6 py-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -41,41 +56,29 @@ export function DashboardHeader() {
         <div className="flex items-center gap-6">
           <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
             <Calendar className="h-4 w-4" />
-            <span>
-              {currentTime.toLocaleDateString('en-IN', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </span>
+            <span suppressHydrationWarning>{dateLabel}</span>
           </div>
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Clock className="h-4 w-4" />
-            <span className="tabular-nums">
-              {currentTime.toLocaleTimeString('en-IN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}
+            <span className="tabular-nums" suppressHydrationWarning>
+              {timeLabel}
             </span>
           </div>
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
-          Overview
-        </span>
-        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
-          Feeders
-        </span>
-        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
-          Analysis
-        </span>
-        <span className="rounded-full border border-border/70 bg-white px-3 py-1 text-muted-foreground">
-          Planning
-        </span>
-      </div>
+      <nav
+        className="mt-3 flex flex-wrap gap-2 text-xs"
+        aria-label="Dashboard sections"
+      >
+        {['Overview', 'Feeders', 'Analysis', 'Planning'].map(label => (
+          <span
+            key={label}
+            className="rounded-full border border-border bg-muted px-3 py-1 text-muted-foreground"
+          >
+            {label}
+          </span>
+        ))}
+      </nav>
     </header>
   )
 }

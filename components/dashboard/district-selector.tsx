@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { MapPin, GitBranch } from 'lucide-react'
+import { formatInteger } from '@/lib/format-time'
 
 interface DistrictSelectorProps {
   selectedDistrict: string
@@ -49,7 +50,7 @@ export function DistrictSelector({
         {selectedDistrictData && (
           <p className="text-xs text-muted-foreground">
             Base Load: {selectedDistrictData.baseLoad} MW | Population:{' '}
-            {selectedDistrictData.population.toLocaleString('en-IN')}
+            {formatInteger(selectedDistrictData.population)}
           </p>
         )}
       </div>

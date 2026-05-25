@@ -22,17 +22,23 @@ import {
 } from '@/components/ui/chart'
 import { Sun, Leaf } from 'lucide-react'
 import { getSolarGeneration } from '@/lib/tangedco-data'
+import { chartTheme } from '@/lib/chart-theme'
 
 interface SolarGenerationChartProps {
   districtBaseLoad: number
   currentHour: number
+  month: number
+  seedKey: string
 }
 
-export function SolarGenerationChart({ districtBaseLoad, currentHour }: SolarGenerationChartProps) {
-  const month = new Date().getMonth() + 1
-
+export function SolarGenerationChart({
+  districtBaseLoad,
+  currentHour,
+  month,
+  seedKey,
+}: SolarGenerationChartProps) {
   const chartData = Array.from({ length: 24 }, (_, hour) => {
-    const solar = getSolarGeneration(hour, month, districtBaseLoad)
+    const solar = getSolarGeneration(hour, month, districtBaseLoad, seedKey)
     return {
       hour: `${hour.toString().padStart(2, '0')}:00`,
       generation: solar,
@@ -44,7 +50,7 @@ export function SolarGenerationChart({ districtBaseLoad, currentHour }: SolarGen
   const peakSolar = Math.max(...chartData.map(d => d.generation))
   const totalDaily = chartData.reduce((sum, d) => sum + d.generation, 0)
 
-  const solarColor = '#22c55e'
+  const solarColor = chartTheme.statusNormal
 
   return (
     <Card>

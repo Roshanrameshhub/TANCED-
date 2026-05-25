@@ -23,6 +23,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { TrendingUp, Thermometer, Droplets } from 'lucide-react'
+import { chartTheme } from '@/lib/chart-theme'
 
 interface DemandData {
   hour: number
@@ -57,12 +58,13 @@ export function DemandForecastChart({
   const avgDemand = Math.round(data.reduce((sum, d) => sum + d.demand, 0) / data.length)
   const baseLoad = data[0]?.baseLoad || 0
 
-  // Compute chart colors
-  const demandColor = '#4f7cff'
-  const temperatureColor = '#f59e0b'
+  const demandColor = chartTheme.primary
+  const temperatureColor = chartTheme.tertiary
+  const nowLineColor = chartTheme.statusNormal
+  const baseLineColor = chartTheme.mutedForeground
 
   return (
-    <Card className="border-border/60 bg-white shadow-sm">
+    <Card className="border-border/60 shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
@@ -92,7 +94,7 @@ export function DemandForecastChart({
 
         {/* Weather Summary */}
         {currentDemand && (
-          <div className="mt-3 flex flex-wrap gap-4 rounded-md border border-border/60 bg-white p-2 text-xs shadow-sm">
+          <div className="mt-3 flex flex-wrap gap-4 rounded-md border border-border/60 bg-muted/40 p-2 text-xs shadow-sm">
             <div className="flex items-center gap-1.5">
               <Thermometer className="h-3.5 w-3.5 text-status-critical" />
               <span className="text-muted-foreground">Temperature:</span>
@@ -115,11 +117,17 @@ export function DemandForecastChart({
       <CardContent>
         <div className="mb-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#4f7cff]" />
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: demandColor }}
+            />
             <span>Demand (MW)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#f59e0b]" />
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: temperatureColor }}
+            />
             <span>Temperature (degC)</span>
           </div>
         </div>
@@ -134,7 +142,7 @@ export function DemandForecastChart({
               color: temperatureColor,
             },
           }}
-          className="h-[340px] rounded-md border border-border/60 bg-white p-2"
+          className="h-[340px] rounded-md border border-border/60 bg-card p-2"
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -147,7 +155,7 @@ export function DemandForecastChart({
                   <stop offset="90%" stopColor={demandColor} stopOpacity={0.06} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="4 4" className="stroke-border" />
               <XAxis
                 dataKey="hourLabel"
                 tick={{ fontSize: 10 }}
@@ -175,24 +183,24 @@ export function DemandForecastChart({
               />
               <ReferenceLine
                 y={baseLoad}
-                stroke="#64748b"
+                stroke={baseLineColor}
                 strokeDasharray="5 5"
                 label={{
                   value: `Base: ${baseLoad} MW`,
                   position: 'insideTopRight',
                   fontSize: 10,
-                  fill: '#64748b',
+                  fill: baseLineColor,
                 }}
               />
               <ReferenceLine
                 x={`${currentHour.toString().padStart(2, '0')}:00`}
-                stroke="#22c55e"
+                stroke={nowLineColor}
                 strokeWidth={2}
                 label={{
                   value: 'Now',
                   position: 'top',
                   fontSize: 10,
-                  fill: '#22c55e',
+                  fill: nowLineColor,
                 }}
               />
               <Area
@@ -216,7 +224,7 @@ export function DemandForecastChart({
         </ChartContainer>
 
         {/* Explanation */}
-        <div className="mt-4 rounded-md border border-border/60 bg-white p-3 text-xs text-muted-foreground shadow-sm">
+        <div className="mt-4 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground shadow-sm">
           <p className="font-medium text-foreground">Understanding this chart:</p>
           <p className="mt-1">
             This forecast combines historical load patterns with weather data (temperature, humidity)

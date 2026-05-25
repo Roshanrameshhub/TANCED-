@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { getDayType, type DayType } from '@/lib/tangedco-data'
+import { formatWeekday } from '@/lib/format-time'
 import { Briefcase, Home, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -44,7 +45,7 @@ export function DayTypeIndicator({ currentDate }: DayTypeIndicatorProps) {
   const config = dayTypeConfig[dayType]
   const Icon = config.icon
 
-  const dayName = currentDate.toLocaleDateString('en-IN', { weekday: 'long' })
+  const dayName = formatWeekday(currentDate)
 
   return (
     <Card>

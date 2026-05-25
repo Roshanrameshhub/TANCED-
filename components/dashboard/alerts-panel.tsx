@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bell, AlertTriangle, AlertCircle, Info, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatTimeFromIso } from '@/lib/format-time'
 
 interface Alert {
   id: string
@@ -105,10 +106,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
                       <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(alert.timestamp).toLocaleTimeString('en-IN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatTimeFromIso(alert.timestamp)}
                         </span>
                         {alert.feeder && (
                           <span className="rounded bg-muted px-1.5 py-0.5">

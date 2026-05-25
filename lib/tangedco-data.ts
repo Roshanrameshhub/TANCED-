@@ -1,3 +1,9 @@
+import { createSeededRandom } from '@/lib/seeded-random'
+
+function dateSeed(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
 // Tamil Nadu Districts and their key details
 export const districts = [
   { id: 'chennai', name: 'Chennai', population: 4646732, baseLoad: 2800 },
@@ -98,7 +104,12 @@ export function getActiveFestival(date: Date): Festival | null {
 }
 
 // Weather simulation based on Tamil Nadu climate
-export function getWeatherForHour(hour: number, month: number): { temperature: number; humidity: number } {
+export function getWeatherForHour(
+  hour: number,
+  month: number,
+  seedKey = 'default',
+): { temperature: number; humidity: number } {
+  const rng = createSeededRandom(`${seedKey}-weather-${month}-${hour}`)
   // Base temperature varies by month (Tamil Nadu climate)
   const monthlyBaseTemp: Record<number, number> = {
     1: 26, 2: 28, 3: 31, 4: 34, 5: 36, 6: 34,
@@ -121,11 +132,11 @@ export function getWeatherForHour(hour: number, month: number): { temperature: n
     hourlyVariation = 0 // Night baseline
   }
   
-  const temperature = baseTemp + hourlyVariation + (Math.random() * 2 - 1)
+  const temperature = baseTemp + hourlyVariation + (rng() * 2 - 1)
   
   // Humidity inversely related to temperature
   const baseHumidity = month >= 10 || month <= 1 ? 75 : 55 // Higher during NE monsoon
-  const humidity = baseHumidity - (hourlyVariation * 2) + (Math.random() * 10 - 5)
+  const humidity = baseHumidity - (hourlyVariation * 2) + (rng() * 10 - 5)
   
   return {
     temperature: Math.round(temperature * 10) / 10,
@@ -184,15 +195,17 @@ export function generateHourlyDemand(
   const festival = getActiveFestival(date)
   const month = date.getMonth() + 1
   const pattern = loadPatterns[dayType]
+  const seed = `${districtId}-${dateSeed(date)}`
   
   return Array.from({ length: 24 }, (_, hour) => {
-    const weather = getWeatherForHour(hour, month)
+    const weather = getWeatherForHour(hour, month, seed)
+    const rng = createSeededRandom(`${seed}-demand-${hour}`)
     const baseMultiplier = pattern[hour]
     const tempFactor = getTemperatureLoadFactor(weather.temperature)
     const festivalFactor = festival ? festival.loadMultiplier : 1.0
     
     // Add some realistic variance
-    const variance = 0.95 + Math.random() * 0.1
+    const variance = 0.95 + rng() * 0.1
     
     const demand = Math.round(
       district.baseLoad * baseMultiplier * tempFactor * festivalFactor * variance
@@ -213,7 +226,8 @@ export function generateHourlyDemand(
 // Generate feeder-level load distribution
 export function generateFeederLoads(
   districtId: string,
-  totalDemand: number
+  totalDemand: number,
+  referenceDate: Date = new Date(2024, 0, 15),
 ): Array<{
   feederId: string
   feederName: string
@@ -228,10 +242,13 @@ export function generateFeederLoads(
   
   const totalCapacity = districtFeeders.reduce((sum, f) => sum + f.capacity, 0)
   
+  const seed = `${districtId}-${dateSeed(referenceDate)}-feeders`
+
   return districtFeeders.map(feeder => {
     // Distribute load proportionally with some variance
     const baseShare = feeder.capacity / totalCapacity
-    const variance = 0.85 + Math.random() * 0.3
+    const rng = createSeededRandom(`${seed}-${feeder.id}`)
+    const variance = 0.85 + rng() * 0.3
     const currentLoad = Math.round(totalDemand * baseShare * variance)
     const loadPercentage = Math.round((currentLoad / feeder.capacity) * 100)
     
@@ -253,7 +270,12 @@ export function generateFeederLoads(
 }
 
 // Solar generation simulation (MW)
-export function getSolarGeneration(hour: number, month: number, districtBaseLoad: number): number {
+export function getSolarGeneration(
+  hour: number,
+  month: number,
+  districtBaseLoad: number,
+  seedKey = 'solar',
+): number {
   // Solar only generates during daylight hours
   if (hour < 6 || hour > 18) return 0
   
@@ -266,7 +288,8 @@ export function getSolarGeneration(hour: number, month: number, districtBaseLoad
   const monthFactor = month >= 3 && month <= 6 ? 1.1 : 0.9
   
   // Cloud cover randomness
-  const cloudFactor = 0.7 + Math.random() * 0.3
+  const rng = createSeededRandom(`${seedKey}-${month}-${hour}`)
+  const cloudFactor = 0.7 + rng() * 0.3
   
   return Math.round(solarPeak * solarFactor * monthFactor * cloudFactor)
 }
@@ -316,7 +339,8 @@ export function calculateTransformerStress(
 export function generateAlerts(
   feederLoads: ReturnType<typeof generateFeederLoads>,
   hourlyDemand: ReturnType<typeof generateHourlyDemand>,
-  currentHour: number
+  currentHour: number,
+  referenceDate: Date,
 ): Array<{
   id: string
   type: 'warning' | 'critical' | 'info'
@@ -342,7 +366,7 @@ export function generateAlerts(
         type: 'critical',
         title: 'Feeder Overload Detected',
         message: `${feeder.feederName} is operating at ${feeder.loadPercentage}% capacity. Immediate action required.`,
-        timestamp: new Date().toISOString(),
+        timestamp: referenceDate.toISOString(),
         feeder: feeder.feederName,
       })
     } else if (feeder.status === 'critical') {
@@ -351,7 +375,7 @@ export function generateAlerts(
         type: 'warning',
         title: 'High Load Warning',
         message: `${feeder.feederName} approaching capacity at ${feeder.loadPercentage}%. Monitor closely.`,
-        timestamp: new Date().toISOString(),
+        timestamp: referenceDate.toISOString(),
         feeder: feeder.feederName,
       })
     }
@@ -366,20 +390,20 @@ export function generateAlerts(
         type: 'info',
         title: 'Peak Hour Approaching',
         message: `Evening peak expected in 1-2 hours. Estimated demand: ${nextHourDemand.demand} MW. Consider preemptive load management.`,
-        timestamp: new Date().toISOString(),
+        timestamp: referenceDate.toISOString(),
       })
     }
   }
   
   // Festival alert
-  const festival = getActiveFestival(new Date())
+  const festival = getActiveFestival(referenceDate)
   if (festival) {
     alerts.push({
       id: 'alert-festival',
       type: 'info',
       title: `Festival Period: ${festival.name}`,
       message: `Load expected to be ${Math.round((festival.loadMultiplier - 1) * 100)}% higher than normal. Additional capacity measures activated.`,
-      timestamp: new Date().toISOString(),
+      timestamp: referenceDate.toISOString(),
     })
   }
   
@@ -389,7 +413,8 @@ export function generateAlerts(
 // Rotational shutdown planning
 export function generateShutdownPlan(
   feederLoads: ReturnType<typeof generateFeederLoads>,
-  deficitMW: number
+  deficitMW: number,
+  referenceDate: Date,
 ): Array<{
   feederId: string
   feederName: string
@@ -418,8 +443,8 @@ export function generateShutdownPlan(
   }> = []
   
   let remainingDeficit = deficitMW
-  let currentTime = new Date()
-  
+  let slotHour = referenceDate.getHours()
+
   for (const feeder of sortedFeeders) {
     if (remainingDeficit <= 0) break
     
@@ -428,14 +453,14 @@ export function generateShutdownPlan(
     plan.push({
       feederId: feeder.feederId,
       feederName: feeder.feederName,
-      scheduledStart: currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      scheduledStart: `${slotHour.toString().padStart(2, '0')}:00`,
       duration: 60, // 1 hour rotational
       loadReduction: Math.round(reduction),
       priority: feeder.priority,
     })
     
     remainingDeficit -= reduction
-    currentTime = new Date(currentTime.getTime() + 60 * 60 * 1000) // Add 1 hour
+    slotHour = (slotHour + 1) % 24
   }
   
   return plan
